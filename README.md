@@ -50,4 +50,4 @@ Options:
 
 > [!IMPORTANT]
 >
-> Provide `port` and `target_port` with same length, otherwise this tool will not be able to proxy all the services!
+> Provide `port` and `target_port` with the same length, otherwise this tool will not be able to proxy all the services!

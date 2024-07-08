@@ -12,7 +12,7 @@ use futures_util::future::{abortable, join_all};
 use mimalloc::MiMalloc;
 use nix::sys::resource::{getrlimit, setrlimit, Resource};
 use tokio::sync::Notify;
-use tracing::{debug, warn, Level};
+use tracing::{debug, warn, info, Level};
 use tracing_subscriber::{filter::Targets, layer::SubscriberExt, util::SubscriberInitExt};
 use types::{Cli, ProxyConfig, RawConfig};
 

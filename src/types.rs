@@ -11,12 +11,15 @@ use std::{
 };
 
 use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 use tracing::{debug, error, info, warn};
 
 #[derive(Parser)]
-#[command(version, about = "tcp-proxy - Tokio based, flexible TCP Proxy implementation.")]
+#[command(
+    version,
+    about = "tcp-proxy - Tokio based, flexible TCP Proxy implementation."
+)]
 pub struct Cli {
     pub config_path: PathBuf,
     #[arg(long)]
@@ -24,9 +27,9 @@ pub struct Cli {
     pub debug: bool,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RawConfig {
-    ip: String,
+    pub ip: String,
     port: SourcePortOptions,
     target_port: TargetPortOptions,
 }
@@ -38,14 +41,14 @@ impl RawConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(untagged)]
 enum SourcePortOptions {
     Range { start: u16, end: u16 },
     Single(u16),
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(untagged)]
 enum TargetPortOptions {
     Range { start: u16, end: u16 },

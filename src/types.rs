@@ -11,20 +11,53 @@ use std::{
 };
 
 use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use time::macros::{format_description, offset};
 use tokio::net::{TcpListener, TcpStream};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, warn, Level};
+use tracing_subscriber::fmt::time::OffsetTime;
 
 #[derive(Parser)]
-#[command(version, about = "tcp-proxy - Tokio based, flexible TCP Proxy implementation.")]
+#[command(
+    version,
+    about = "tcp-proxy - Tokio based, flexible TCP Proxy implementation."
+)]
 pub struct Cli {
-    pub config_path: PathBuf,
+    pub config_path: Option<PathBuf>,
     #[arg(long)]
     /// Display debug logs.
     pub debug: bool,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+impl Cli {
+    pub fn init_logger(&self) {
+        #[rustfmt::skip]
+        let (source_info, max_level) = match (cfg!(debug_assertions), self.debug) {
+            (source_info @ true, true) => (source_info, Level::TRACE),
+            (source_info @ true, false)
+             | (source_info @ false, true) => (source_info, Level::DEBUG),
+            (source_info @ false, false) => (source_info, Level::INFO),
+        };
+
+        let format = tracing_subscriber::fmt::format()
+            .compact()
+            .with_timer(OffsetTime::new(
+                offset!(+8),
+                format_description!("[year]-[month]-[day]T[hour]:[minute]:[second][offset_hour sign:mandatory]:[offset_minute padding:zero]"),
+            ))
+            .with_target(true)
+            .with_thread_names(source_info)
+            .with_source_location(source_info)
+            .with_line_number(source_info);
+
+        tracing_subscriber::fmt()
+            .event_format(format)
+            .with_max_level(max_level)
+            .init();
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RawConfig {
     ip: String,
     port: SourcePortOptions,
@@ -38,18 +71,36 @@ impl RawConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(untagged)]
 enum SourcePortOptions {
     Range { start: u16, end: u16 },
     Single(u16),
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+impl Default for SourcePortOptions {
+    fn default() -> Self {
+        Self::Range {
+            start: u16::default(),
+            end: u16::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(untagged)]
 enum TargetPortOptions {
     Range { start: u16, end: u16 },
     Single(u16),
+}
+
+impl Default for TargetPortOptions {
+    fn default() -> Self {
+        Self::Range {
+            start: u16::default(),
+            end: u16::default(),
+        }
+    }
 }
 
 #[derive(Debug)]
